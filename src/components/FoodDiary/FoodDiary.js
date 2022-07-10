@@ -4,6 +4,8 @@ import { useState } from "react";
 import FoodForm from "../FoodForm/FoodForm";
 import FoodTable from "../FoodTable/FoodTable";
 import axios from "axios";
+import { auth, db } from "../../helpers/firebaseConfig";
+import { ref, onValue } from "firebase/database";
 
 const FoodDiary = () => {
   // const [keyword, setKeyword] = useState("");
@@ -11,6 +13,18 @@ const FoodDiary = () => {
   // const [weight, setWeight] = useState("");
 
   const [foodList, setFoodList] = useState([]);
+  useEffect(() => {
+    if (auth.currentUser) {
+      const dbRef = ref(db, "food/" + auth.currentUser.uid);
+      return onValue(dbRef, (snapshot) => {
+        console.log(snapshot.val());
+        const foods = !!snapshot.val()
+          ? Object.entries(snapshot.val()).map((foodArray) => foodArray[1])
+          : [];
+        setFoodList(foods);
+      });
+    }
+  }, [auth.currentUser]);
 
   // console.log({ stateKeyword: keyword, stateWeight: weight, foodList });
 
@@ -25,7 +39,7 @@ const FoodDiary = () => {
       >
         Food Diary
       </Typography>
-      <FoodForm setFoodList={setFoodList}  />
+      <FoodForm />
       <FoodTable foodList={foodList} />
     </>
   );

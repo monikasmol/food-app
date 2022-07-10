@@ -5,6 +5,8 @@ import Autocomplete from "@mui/material/Autocomplete";
 import axios from "axios";
 import { useState } from "react";
 import InputAdornment from "@mui/material/InputAdornment";
+import { auth, db } from "../../helpers/firebaseConfig";
+import { ref, push } from "firebase/database";
 
 const FoodForm = (props) => {
   const [options, setOptions] = useState([]);
@@ -30,6 +32,7 @@ const FoodForm = (props) => {
   }, [inputValue]);
 
   const submitHandler = (data) => {
+    const dbRef = ref(db, "food/" + auth.currentUser.uid);
     axios
       .get(
         `https://api.edamam.com/api/food-database/v2/parser?app_id=aeec473f&app_key=365a042ada8f7bb4ade83cae444e6e30&ingr=${data.keyword}`
@@ -39,18 +42,16 @@ const FoodForm = (props) => {
 
         const image = response.data.parsed[0].food.image;
 
-        props.setFoodList((oldArray) => [
-          ...oldArray,
-          {
-            name: `${data.keyword} (${data.weight}g)`,
-            calories: (nutrients.ENERC_KCAL / 100) * data.weight,
-            proteins: (nutrients.PROCNT / 100) * data.weight,
-            fat: (nutrients.FAT / 100) * data.weight,
-            carbs: (nutrients.CHOCDF / 100) * data.weight,
-            fibers: (nutrients.FIBTG / 100) * data.weight,
-            image: image
-          },
-        ]);
+        push(dbRef, {
+          name: `${data.keyword} (${data.weight}g)`,
+          calories: (nutrients.ENERC_KCAL / 100) * data.weight,
+          proteins: (nutrients.PROCNT / 100) * data.weight,
+          fat: (nutrients.FAT / 100) * data.weight,
+          carbs: (nutrients.CHOCDF / 100) * data.weight,
+          fibers: (nutrients.FIBTG / 100) * data.weight,
+          image: image,
+        });
+
         console.log(response.data.parsed[0].food.nutrients);
       })
       .catch((error) => console.warn(error));
@@ -61,7 +62,6 @@ const FoodForm = (props) => {
 
   return (
     <form onSubmit={handleSubmit(submitHandler)}>
-      
       <Autocomplete
         disablePortal
         id="combo-box-demo"
